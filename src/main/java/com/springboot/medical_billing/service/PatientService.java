@@ -22,6 +22,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
@@ -118,7 +119,14 @@ public class PatientService {
         // Original file name
         String originalFileName = System.currentTimeMillis() + "_" + file.getOriginalFilename() ;
 
-        Files.copy(file.getInputStream() , Paths.get(uploadDir + originalFileName), StandardCopyOption.REPLACE_EXISTING);
+        // file must stay inside the uploads folder (blocks names like ../../file.pdf)
+        Path uploadPath = Paths.get(uploadDir).normalize();
+        Path filePath = uploadPath.resolve(originalFileName).normalize();
+        if (!filePath.startsWith(uploadPath)) {
+            throw new IllegalArgumentException("Invalid file name");
+        }
+
+        Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
         return originalFileName;
     }
